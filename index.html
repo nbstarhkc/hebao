@@ -3,6 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <script>
+    (() => {
+      const viewport = document.querySelector('meta[name="viewport"]');
+      let saved = "";
+      try { saved = localStorage.getItem("ground-zero-view-mode") || ""; } catch (error) { /* storage may be blocked */ }
+      const detectedMobile = matchMedia("(pointer: coarse)").matches || innerWidth <= 700;
+      const mode = saved === "mobile" || saved === "desktop" ? saved : detectedMobile ? "mobile" : "desktop";
+      document.documentElement.dataset.mobileDevice = String(detectedMobile);
+      document.documentElement.dataset.viewMode = mode;
+      if (mode === "desktop" && detectedMobile) {
+        const scale = Math.max(.25, Math.min(1, (screen.width || 390) / 1180));
+        viewport.setAttribute("content", `width=1180, initial-scale=${scale.toFixed(3)}, minimum-scale=0.25, maximum-scale=3, user-scalable=yes, viewport-fit=cover`);
+      }
+    })();
+  </script>
   <meta name="theme-color" content="#070b0c">
   <title>GROUND ZERO // 核爆观测模拟器</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%23080b0c' stroke='%23ff5b35' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='7' fill='%23ffb536'/%3E%3Cpath d='M32 7v13M32 44v13M7 32h13M44 32h13' stroke='%23ff5b35' stroke-width='4'/%3E%3C/svg%3E">
@@ -22,6 +37,7 @@
         <span>节点 CN-07</span>
       </div>
       <div class="top-actions">
+        <button class="view-mode-btn" id="viewModeBtn" type="button"><b id="viewModeIcon">▣</b><span id="viewModeLabel">电脑版</span></button>
         <button class="icon-btn needs-unlock" id="audioBtn" aria-label="切换音效" aria-pressed="false" title="点击解锁沉浸声场">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9v6h4l5 4V5L9 9H5zm11.5 3a4.5 4.5 0 0 0-1.5-3.35v6.7A4.5 4.5 0 0 0 16.5 12zm0-8.4v2.07a8 8 0 0 1 0 12.66v2.07a10 10 0 0 0 0-16.8z"/></svg>
         </button>
@@ -211,12 +227,13 @@
       <div><b>05</b><span><strong>重置沙盘</strong>按 C 或点击底部“清空”，随时恢复三维城市。</span></div>
       <div><b>06</b><span><strong>空间声场</strong>首次爆破会自动解锁声音；也可点击顶部扬声器试听确认。建议使用耳机，主声浪按观察距离延迟抵达。</span></div>
       <div><b>07</b><span><strong>手机操作</strong>单指滑动环视、点按地面选爆点、双指缩放；左下摇杆移动，右侧按钮升降、引爆和打开参数。</span></div>
+      <div><b>08</b><span><strong>界面切换</strong>手机顶部可在手机版和电脑版之间切换，选择会自动保存。</span></div>
     </div>
     <p>建议佩戴耳机并全屏体验。没有任务流程或投放次数限制；所有数值均为游戏化视觉参数。</p>
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/cannon@0.6.2/build/cannon.min.js" crossorigin="anonymous"></script>
-  <script src="game.js?v=5"></script>
+  <script src="game.js?v=6"></script>
 </body>
 </html>

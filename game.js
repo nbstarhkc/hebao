@@ -12,7 +12,7 @@
     document.body.innerHTML = "<p style='color:white;padding:30px'>Cannon 物理引擎未加载，请检查网络或刷新页面。</p>";
     return;
   }
-  const isMobileDevice = window.matchMedia("(pointer: coarse)").matches || window.innerWidth <= 700;
+  const isMobileDevice = document.documentElement.dataset.viewMode === "mobile";
   document.documentElement.classList.toggle("mobile-device", isMobileDevice);
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -61,7 +61,8 @@
     audioBtn: $("#audioBtn"), helpBtn: $("#helpBtn"), helpDialog: $("#helpDialog"), groundLabel: $("#groundLabel"),
     leftPanel: $(".left-panel"), mobilePanelClose: $("#mobilePanelClose"), mobileSettingsBtn: $("#mobileSettingsBtn"),
     mobileDetonateBtn: $("#mobileDetonateBtn"), mobileJoystick: $("#mobileJoystick"), mobileJoystickKnob: $("#mobileJoystickKnob"),
-    mobileUpBtn: $("#mobileUpBtn"), mobileDownBtn: $("#mobileDownBtn")
+    mobileUpBtn: $("#mobileUpBtn"), mobileDownBtn: $("#mobileDownBtn"), viewModeBtn: $("#viewModeBtn"),
+    viewModeLabel: $("#viewModeLabel"), viewModeIcon: $("#viewModeIcon")
   };
 
   const environments = {
@@ -2181,6 +2182,16 @@
     if(renderer.shadowMap.enabled&&state.animationFrame%4===0)renderer.shadowMap.needsUpdate=true;
     tuneRenderScale(now);renderer.render(scene,camera);requestAnimationFrame(animate);
   }
+
+  const currentViewMode = document.documentElement.dataset.viewMode === "mobile" ? "mobile" : "desktop";
+  ui.viewModeLabel.textContent = currentViewMode === "mobile" ? "电脑版" : "手机版";
+  ui.viewModeIcon.textContent = currentViewMode === "mobile" ? "▣" : "▯";
+  ui.viewModeBtn.title = currentViewMode === "mobile" ? "切换到完整电脑界面" : "切换回触控手机界面";
+  ui.viewModeBtn.addEventListener("click", () => {
+    const nextMode = currentViewMode === "mobile" ? "desktop" : "mobile";
+    try { localStorage.setItem("ground-zero-view-mode", nextMode); } catch (error) { /* storage may be blocked */ }
+    location.reload();
+  });
 
   ui.yieldRange.addEventListener("input",updateControls);ui.heightRange.addEventListener("input",updateControls);ui.intervalRange.addEventListener("input",updateControls);
   $$("[data-yield]").forEach(button=>button.addEventListener("click",()=>{ui.yieldRange.value=String(sliderFromYield(+button.dataset.yield));updateControls();}));
