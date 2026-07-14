@@ -3,7 +3,7 @@
 // Cannon runs in a dedicated worker when the sandbox is served over HTTP.
 // Rendering, camera input and smoke stay on the main thread, so rigid-body
 // collision work can occupy another CPU core without blocking WebGL frames.
-importScripts("node_modules/cannon/build/cannon.min.js");
+importScripts("https://cdn.jsdelivr.net/npm/cannon@0.6.2/build/cannon.min.js");
 
 let world = null;
 let concrete = null;

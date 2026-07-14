@@ -2,14 +2,14 @@
   "use strict";
 
   if (!window.THREE) {
-    document.body.innerHTML = "<p style='color:white;padding:30px'>Three.js 未加载，请在项目目录运行 npm install。</p>";
+    document.body.innerHTML = "<p style='color:white;padding:30px'>Three.js 未加载，请检查网络或刷新页面。</p>";
     return;
   }
 
   const T = window.THREE;
   const C = window.CANNON;
   if (!C) {
-    document.body.innerHTML = "<p style='color:white;padding:30px'>Cannon 物理引擎未加载，请在项目目录运行 npm install。</p>";
+    document.body.innerHTML = "<p style='color:white;padding:30px'>Cannon 物理引擎未加载，请检查网络或刷新页面。</p>";
     return;
   }
   const $ = (selector) => document.querySelector(selector);
