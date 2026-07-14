@@ -12,6 +12,8 @@
     document.body.innerHTML = "<p style='color:white;padding:30px'>Cannon 物理引擎未加载，请检查网络或刷新页面。</p>";
     return;
   }
+  const isMobileDevice = window.matchMedia("(pointer: coarse)").matches || window.innerWidth <= 700;
+  document.documentElement.classList.toggle("mobile-device", isMobileDevice);
   const $ = (selector) => document.querySelector(selector);
   const $$ = (selector) => [...document.querySelectorAll(selector)];
   const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
@@ -56,7 +58,10 @@
     fireballBar: $("#fireballBar"), shockBar: $("#shockBar"), cloudBar: $("#cloudBar"), seismicBar: $("#seismicBar"),
     integrityValue: $("#integrityValue"), integrityBar: $("#integrityBar"), integrityNote: $("#integrityNote"),
     logList: $("#logList"), eventBanner: $("#eventBanner"), eventKicker: $("#eventKicker"), eventTitle: $("#eventTitle"), eventTime: $("#eventTime"),
-    audioBtn: $("#audioBtn"), helpBtn: $("#helpBtn"), helpDialog: $("#helpDialog"), groundLabel: $("#groundLabel")
+    audioBtn: $("#audioBtn"), helpBtn: $("#helpBtn"), helpDialog: $("#helpDialog"), groundLabel: $("#groundLabel"),
+    leftPanel: $(".left-panel"), mobilePanelClose: $("#mobilePanelClose"), mobileSettingsBtn: $("#mobileSettingsBtn"),
+    mobileDetonateBtn: $("#mobileDetonateBtn"), mobileJoystick: $("#mobileJoystick"), mobileJoystickKnob: $("#mobileJoystickKnob"),
+    mobileUpBtn: $("#mobileUpBtn"), mobileDownBtn: $("#mobileDownBtn")
   };
 
   const environments = {
@@ -99,6 +104,13 @@
     dragStartY: 0,
     lastPointerX: 0,
     lastPointerY: 0,
+    touchPointers: new Map(),
+    touchGesturePinched: false,
+    pinchStartDistance: 0,
+    pinchStartRadius: 850,
+    mobileMoveX: 0,
+    mobileMoveY: 0,
+    mobileVertical: 0,
     audioEnabled: true,
     audioUnlocked: false,
     audioUnlockPromise: null,
@@ -136,7 +148,7 @@
     hardwareConcurrency: Math.max(2, navigator.hardwareConcurrency || 4),
     seed: 204,
     camera: { target: new T.Vector3(0, 320, 0), radius: 850, theta: .68, phi: 1.22 },
-    renderScale: Math.min(window.devicePixelRatio || 1, 1.5),
+    renderScale: Math.min(window.devicePixelRatio || 1, isMobileDevice ? 1 : 1.5),
     performanceFrames: 0,
     performanceLast: performance.now(),
     lastFps: 60,
@@ -286,10 +298,11 @@
   renderer.outputEncoding = T.sRGBEncoding;
   renderer.toneMapping = T.ACESFilmicToneMapping;
   renderer.toneMappingExposure = .9;
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = !isMobileDevice;
   renderer.shadowMap.type = T.PCFShadowMap;
   renderer.shadowMap.autoUpdate = false;
   canvas.dataset.gpuPipeline = renderer.capabilities.isWebGL2 ? "webgl2-batched" : "webgl1-batched";
+  canvas.dataset.mobileControls = String(isMobileDevice);
 
   const scene = new T.Scene();
   scene.fog = new T.FogExp2(environments.city.fog, .000085);
@@ -795,8 +808,8 @@
       }
     }
 
-    const cityStep = 55;
-    const fillerChance = state.environment === "desert" ? .38 : state.environment === "coast" ? .64 : .76;
+    const cityStep = isMobileDevice ? 68 : 55;
+    const fillerChance = (state.environment === "desert" ? .38 : state.environment === "coast" ? .64 : .76) * (isMobileDevice ? .82 : 1);
     let gridZ = 0;
     for (let z = -9700; z <= 9700; z += cityStep, gridZ++) {
       let gridX = 0;
@@ -959,7 +972,7 @@
   }
 
   function createSmokeVolume(count, giantYield = false) {
-    const geometry = new T.SphereGeometry(1, giantYield ? 12 : 14, giantYield ? 8 : 10);
+    const geometry = new T.SphereGeometry(1, isMobileDevice ? (giantYield ? 9 : 11) : (giantYield ? 12 : 14), isMobileDevice ? (giantYield ? 6 : 8) : (giantYield ? 8 : 10));
     const smokePositions = geometry.attributes.position;
     const smokeNormals = geometry.attributes.normal;
     for (let index = 0; index < smokePositions.count; index++) {
@@ -1538,7 +1551,7 @@
       skyGlow = Math.max(skyGlow, (1 - smoothstep(.08, 4.8, visualAge)));
       if (age > 31 * blast.timeScale) { removeBlast(blast); state.blasts.splice(index, 1); }
     }
-    renderer.shadowMap.enabled = !state.blasts.some((blast) => blast.giantYield);
+    renderer.shadowMap.enabled = !isMobileDevice && !state.blasts.some((blast) => blast.giantYield);
     ui.whiteFlash.style.opacity = String(flash);
     renderer.toneMappingExposure = .92 + skyGlow * .82 + flash * 1.45;
     const sky = worldGroup.getObjectByName("sky");
@@ -1555,10 +1568,16 @@
     if (state.keys.has("KeyS")) cameraMove.add(cameraForward);
     if (state.keys.has("KeyA")) cameraMove.addScaledVector(cameraRight, -1);
     if (state.keys.has("KeyD")) cameraMove.add(cameraRight);
-    const speed = (state.keys.has("ShiftLeft") || state.keys.has("ShiftRight")) ? 1450 : 360;
-    if (cameraMove.lengthSq()) cam.target.addScaledVector(cameraMove.normalize(), speed * delta);
+    if (state.mobileMoveX || state.mobileMoveY) {
+      cameraMove.addScaledVector(cameraRight, state.mobileMoveX);
+      cameraMove.addScaledVector(cameraForward, state.mobileMoveY);
+    }
+    const speed = (state.keys.has("ShiftLeft") || state.keys.has("ShiftRight")) ? 1450 : isMobileDevice ? 440 : 360;
+    const inputStrength = clamp(cameraMove.length(), 0, 1);
+    if (cameraMove.lengthSq()) cam.target.addScaledVector(cameraMove.normalize(), speed * delta * inputStrength);
     if (state.keys.has("KeyQ")) cam.target.y -= speed * .55 * delta;
     if (state.keys.has("KeyE")) cam.target.y += speed * .55 * delta;
+    if (state.mobileVertical) cam.target.y += state.mobileVertical * speed * .55 * delta;
     cam.target.x = clamp(cam.target.x, -9800, 9800); cam.target.z = clamp(cam.target.z, -9800, 9800); cam.target.y = clamp(cam.target.y, 2, 3200);
     const longView = smoothstep(900, 11000, cam.radius);
     const highView = smoothstep(250, 3000, cam.target.y);
@@ -1745,7 +1764,7 @@
   }
 
   function resize(){const rect=stage.getBoundingClientRect();state.dimensions={width:rect.width,height:rect.height,dpr:state.renderScale};renderer.setPixelRatio(state.renderScale);renderer.setSize(rect.width,rect.height,false);camera.aspect=rect.width/Math.max(1,rect.height);camera.updateProjectionMatrix();grainCanvas.width=Math.max(1,Math.floor(rect.width/7));grainCanvas.height=Math.max(1,Math.floor(rect.height/7));}
-  function renderGrain(){const w=grainCanvas.width,h=grainCanvas.height;if(!w||!h)return;const image=grainCtx.createImageData(w,h);for(let i=0;i<image.data.length;i+=4){const value=Math.random()*255;image.data[i]=image.data[i+1]=image.data[i+2]=value;image.data[i+3]=Math.random()*48;}grainCtx.putImageData(image,0,0);}
+  function renderGrain(){if(isMobileDevice)return;const w=grainCanvas.width,h=grainCanvas.height;if(!w||!h)return;const image=grainCtx.createImageData(w,h);for(let i=0;i<image.data.length;i+=4){const value=Math.random()*255;image.data[i]=image.data[i+1]=image.data[i+2]=value;image.data[i+3]=Math.random()*48;}grainCtx.putImageData(image,0,0);}
 
   function createAudioNoiseBuffer(ac, duration, color = "white") {
     const buffer = ac.createBuffer(1, Math.ceil(ac.sampleRate * duration), ac.sampleRate);
@@ -2134,7 +2153,7 @@
     state.lastFps = fps;
     canvas.dataset.fps = fps.toFixed(1);
     const giantActive = state.blasts.some((blast) => blast.giantYield);
-    const maxScale = giantActive ? .7 : Math.min(window.devicePixelRatio || 1, 1.5);
+    const maxScale = isMobileDevice ? (giantActive ? .58 : Math.min(window.devicePixelRatio || 1, 1.05)) : giantActive ? .7 : Math.min(window.devicePixelRatio || 1, 1.5);
     let next = state.renderScale;
     if (fps < 48) next = Math.max(.42, next - .12);
     else if (fps > 57 && state.blasts.length < 5) next = Math.min(maxScale, next + .07);
@@ -2187,12 +2206,114 @@
   });
   ui.helpBtn.addEventListener("click",()=>ui.helpDialog.showModal());$("#closeHelp").addEventListener("click",()=>ui.helpDialog.close());ui.helpDialog.addEventListener("click",event=>{if(event.target===ui.helpDialog)ui.helpDialog.close();});
 
-  canvas.addEventListener("pointerdown",event=>{state.dragging=true;state.dragged=false;state.dragStartX=state.lastPointerX=event.clientX;state.dragStartY=state.lastPointerY=event.clientY;canvas.setPointerCapture(event.pointerId);});
-  canvas.addEventListener("pointermove",event=>{if(!state.dragging)return;const dx=event.clientX-state.lastPointerX,dy=event.clientY-state.lastPointerY;if(Math.hypot(event.clientX-state.dragStartX,event.clientY-state.dragStartY)>4)state.dragged=true;if(state.dragged){state.camera.theta-=dx*.006;state.camera.phi=clamp(state.camera.phi-dy*.005,.18,2.82);}state.lastPointerX=event.clientX;state.lastPointerY=event.clientY;});
-  canvas.addEventListener("pointerup",event=>{if(!state.dragged)pickGround(event);state.dragging=false;canvas.releasePointerCapture(event.pointerId);});
+  function beginCanvasPointer(event) {
+    if (event.pointerType === "touch") {
+      event.preventDefault();
+      state.touchPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      canvas.setPointerCapture(event.pointerId);
+      if (state.touchPointers.size === 1) {
+        state.dragging = true; state.dragged = false; state.touchGesturePinched = false;
+        state.dragStartX = state.lastPointerX = event.clientX; state.dragStartY = state.lastPointerY = event.clientY;
+      } else if (state.touchPointers.size === 2) {
+        const [first, second] = [...state.touchPointers.values()];
+        state.pinchStartDistance = Math.max(1, Math.hypot(second.x - first.x, second.y - first.y));
+        state.pinchStartRadius = state.camera.radius;
+        state.touchGesturePinched = true; state.dragged = true;
+      }
+      return;
+    }
+    state.dragging = true; state.dragged = false;
+    state.dragStartX = state.lastPointerX = event.clientX; state.dragStartY = state.lastPointerY = event.clientY;
+    canvas.setPointerCapture(event.pointerId);
+  }
+
+  function moveCanvasPointer(event) {
+    if (event.pointerType === "touch") {
+      if (!state.touchPointers.has(event.pointerId)) return;
+      event.preventDefault();
+      state.touchPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (state.touchPointers.size >= 2) {
+        const [first, second] = [...state.touchPointers.values()];
+        const distance = Math.max(1, Math.hypot(second.x - first.x, second.y - first.y));
+        state.camera.radius = clamp(state.pinchStartRadius * state.pinchStartDistance / distance, 18, 12000);
+        canvas.dataset.touchGesture = "pinch";
+        return;
+      }
+    }
+    if (!state.dragging) return;
+    const dx = event.clientX - state.lastPointerX, dy = event.clientY - state.lastPointerY;
+    if (Math.hypot(event.clientX - state.dragStartX, event.clientY - state.dragStartY) > (event.pointerType === "touch" ? 7 : 4)) state.dragged = true;
+    if (state.dragged) {
+      state.camera.theta -= dx * (event.pointerType === "touch" ? .007 : .006);
+      state.camera.phi = clamp(state.camera.phi - dy * (event.pointerType === "touch" ? .006 : .005), .18, 2.82);
+      canvas.dataset.touchGesture = event.pointerType === "touch" ? "orbit" : "mouse";
+    }
+    state.lastPointerX = event.clientX; state.lastPointerY = event.clientY;
+  }
+
+  function endCanvasPointer(event, cancelled = false) {
+    if (event.pointerType === "touch") {
+      const wasSingle = state.touchPointers.size === 1;
+      const shouldPick = !cancelled && wasSingle && !state.dragged && !state.touchGesturePinched;
+      state.touchPointers.delete(event.pointerId);
+      try { canvas.releasePointerCapture(event.pointerId); } catch (error) { /* capture already released */ }
+      if (shouldPick) { pickGround(event); canvas.dataset.touchGesture = "target"; }
+      if (state.touchPointers.size === 1) {
+        const remaining = [...state.touchPointers.values()][0];
+        state.dragStartX = state.lastPointerX = remaining.x; state.dragStartY = state.lastPointerY = remaining.y;
+        state.dragging = true; state.dragged = true;
+      } else if (!state.touchPointers.size) {
+        state.dragging = false; state.dragged = false; state.touchGesturePinched = false;
+      }
+      return;
+    }
+    if (!cancelled && !state.dragged) pickGround(event);
+    state.dragging = false;
+    try { canvas.releasePointerCapture(event.pointerId); } catch (error) { /* capture already released */ }
+  }
+
+  let joystickPointerId = null;
+  function updateMobileJoystick(event) {
+    const rect = ui.mobileJoystick.getBoundingClientRect();
+    const maxDistance = rect.width * .31;
+    let dx = event.clientX - (rect.left + rect.width / 2);
+    let dy = event.clientY - (rect.top + rect.height / 2);
+    const length = Math.hypot(dx, dy);
+    if (length > maxDistance) { dx *= maxDistance / length; dy *= maxDistance / length; }
+    state.mobileMoveX = dx / maxDistance;
+    state.mobileMoveY = dy / maxDistance;
+    ui.mobileJoystickKnob.style.transform = `translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`;
+    canvas.dataset.mobileMove = `${state.mobileMoveX.toFixed(2)},${state.mobileMoveY.toFixed(2)}`;
+  }
+  function resetMobileJoystick() {
+    joystickPointerId = null; state.mobileMoveX = 0; state.mobileMoveY = 0;
+    ui.mobileJoystickKnob.style.transform = "translate(-50%,-50%)";
+    canvas.dataset.mobileMove = "0.00,0.00";
+  }
+  ui.mobileJoystick.addEventListener("pointerdown", (event) => {
+    event.preventDefault(); joystickPointerId = event.pointerId;
+    ui.mobileJoystick.setPointerCapture(event.pointerId); updateMobileJoystick(event);
+  });
+  ui.mobileJoystick.addEventListener("pointermove", (event) => { if (event.pointerId === joystickPointerId) updateMobileJoystick(event); });
+  ["pointerup", "pointercancel", "lostpointercapture"].forEach((type) => ui.mobileJoystick.addEventListener(type, (event) => { if (event.pointerId === joystickPointerId) resetMobileJoystick(); }));
+
+  function bindAltitudeButton(button, direction) {
+    const stop = (event) => { if (state.mobileVertical === direction) state.mobileVertical = 0; button.classList.remove("active"); if (event) event.preventDefault(); };
+    button.addEventListener("pointerdown", (event) => { event.preventDefault(); state.mobileVertical = direction; button.classList.add("active"); button.setPointerCapture(event.pointerId); });
+    button.addEventListener("pointerup", stop); button.addEventListener("pointercancel", stop); button.addEventListener("lostpointercapture", stop);
+  }
+  bindAltitudeButton(ui.mobileUpBtn, 1); bindAltitudeButton(ui.mobileDownBtn, -1);
+  ui.mobileDetonateBtn.addEventListener("click", async () => { await unlockAudio(false); triggerDeployment(); });
+  ui.mobileSettingsBtn.addEventListener("click", () => ui.leftPanel.classList.add("mobile-open"));
+  ui.mobilePanelClose.addEventListener("click", () => ui.leftPanel.classList.remove("mobile-open"));
+
+  canvas.addEventListener("pointerdown",beginCanvasPointer);
+  canvas.addEventListener("pointermove",moveCanvasPointer);
+  canvas.addEventListener("pointerup",event=>endCanvasPointer(event,false));
+  canvas.addEventListener("pointercancel",event=>endCanvasPointer(event,true));
   canvas.addEventListener("wheel",event=>{event.preventDefault();state.camera.radius=clamp(state.camera.radius*Math.exp(event.deltaY*.001),18,12000);},{passive:false});
   window.addEventListener("keydown",event=>{if(["KeyW","KeyA","KeyS","KeyD","KeyQ","KeyE","ShiftLeft","ShiftRight"].includes(event.code)){state.keys.add(event.code);if(document.activeElement===document.body)event.preventDefault();}if(event.code==="Space"&&!event.repeat&&document.activeElement?.tagName!=="INPUT"){event.preventDefault();unlockAudio(false).then(triggerDeployment);}if(event.code==="KeyC"&&!event.repeat)clearSandbox();if(event.code==="KeyP"&&!event.repeat)ui.pauseBtn.click();});
-  window.addEventListener("keyup",event=>state.keys.delete(event.code));window.addEventListener("blur",()=>state.keys.clear());window.addEventListener("resize",resize);
+  window.addEventListener("keyup",event=>state.keys.delete(event.code));window.addEventListener("blur",()=>{state.keys.clear();state.mobileVertical=0;resetMobileJoystick();});window.addEventListener("resize",resize);
 
   setAudioButtonState();updateControls();buildEnvironment();resize();updateCamera(0);setInterval(renderGrain,220);requestAnimationFrame(animate);
 })();

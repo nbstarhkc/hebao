@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#070b0c">
   <title>GROUND ZERO // 核爆观测模拟器</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%23080b0c' stroke='%23ff5b35' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='7' fill='%23ffb536'/%3E%3Cpath d='M32 7v13M32 44v13M7 32h13M44 32h13' stroke='%23ff5b35' stroke-width='4'/%3E%3C/svg%3E">
@@ -31,6 +31,7 @@
 
     <main class="workspace">
       <aside class="control-panel left-panel">
+        <button class="mobile-panel-close" id="mobilePanelClose" aria-label="收起参数面板">收起参数 ×</button>
         <div class="panel-heading">
           <span>01</span>
           <div><small>DETONATION CONTROL</small><h2>爆炸参数</h2></div>
@@ -98,6 +99,20 @@
         <div class="stage-vignette"></div>
         <div class="white-flash" id="whiteFlash"></div>
 
+        <div class="mobile-controls" id="mobileControls" aria-label="手机视角控制">
+          <div class="mobile-joystick" id="mobileJoystick" role="application" aria-label="移动摇杆">
+            <i id="mobileJoystickKnob"></i><span>移动</span>
+          </div>
+          <div class="mobile-action-stack">
+            <div class="mobile-altitude">
+              <button id="mobileUpBtn" aria-label="升高观察位置">↑<small>升</small></button>
+              <button id="mobileDownBtn" aria-label="降低观察位置">↓<small>降</small></button>
+            </div>
+            <button class="mobile-fire" id="mobileDetonateBtn"><b>↯</b><span>引爆</span></button>
+            <button class="mobile-settings" id="mobileSettingsBtn"><b>≡</b><span>参数</span></button>
+          </div>
+        </div>
+
         <div class="camera-hud">
           <div class="hud-top-left">
             <span>CAM 04 / <b id="sceneLabel">都市观测站</b></span>
@@ -107,7 +122,7 @@
           <div class="reticle" id="reticle"><i></i><i></i><i></i><i></i><span></span></div>
           <div class="ground-label" id="groundLabel"><i></i><span>GROUND ZERO</span><b>0.0 KM</b></div>
           <div class="camera-data"><span>ISO 400</span><span>1/1000</span><span>F 5.6</span><span id="windLabel">WIND 12 KM/H →</span></div>
-          <div class="freecam-hint"><b>FREE CAM</b><span>单击选爆点 · 拖动环绕 · WASD 移动 · 滚轮缩放 · Q/E 升降</span></div>
+          <div class="freecam-hint"><b>FREE CAM</b><span class="desktop-hint">单击选爆点 · 拖动环绕 · WASD 移动 · 滚轮缩放 · Q/E 升降</span><span class="mobile-hint">点按选爆点 · 滑动环视 · 双指缩放</span></div>
         </div>
 
         <div class="event-banner" id="eventBanner">
@@ -195,12 +210,13 @@
       <div><b>04</b><span><strong>自由观察</strong>WASD 移动，Q/E 升降，拖动可越过地平线仰视，滚轮缩放。</span></div>
       <div><b>05</b><span><strong>重置沙盘</strong>按 C 或点击底部“清空”，随时恢复三维城市。</span></div>
       <div><b>06</b><span><strong>空间声场</strong>首次爆破会自动解锁声音；也可点击顶部扬声器试听确认。建议使用耳机，主声浪按观察距离延迟抵达。</span></div>
+      <div><b>07</b><span><strong>手机操作</strong>单指滑动环视、点按地面选爆点、双指缩放；左下摇杆移动，右侧按钮升降、引爆和打开参数。</span></div>
     </div>
     <p>建议佩戴耳机并全屏体验。没有任务流程或投放次数限制；所有数值均为游戏化视觉参数。</p>
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/cannon@0.6.2/build/cannon.min.js" crossorigin="anonymous"></script>
-  <script src="game.js?v=4"></script>
+  <script src="game.js?v=5"></script>
 </body>
 </html>
