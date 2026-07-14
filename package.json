@@ -1,0 +1,13 @@
+{
+  "name": "ground-zero-3d-simulator",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "check": "node --check game.js && node --check physics-worker.js && node --check effects-worker.js",
+    "start": "npx serve ."
+  },
+  "dependencies": {
+    "cannon": "0.6.2",
+    "three": "0.128.0"
+  }
+}

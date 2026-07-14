@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#070b0c">
+  <title>GROUND ZERO // 核爆观测模拟器</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%23080b0c' stroke='%23ff5b35' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='7' fill='%23ffb536'/%3E%3Cpath d='M32 7v13M32 44v13M7 32h13M44 32h13' stroke='%23ff5b35' stroke-width='4'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark"><i></i><i></i><i></i></div>
+        <div><strong>GROUND ZERO</strong><span>沉浸式爆炸观测系统</span></div>
+      </div>
+      <div class="header-center">
+        <span class="system-dot"></span>
+        <span id="systemStatus">SIMULATION READY</span>
+        <i></i>
+        <span>节点 CN-07</span>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn needs-unlock" id="audioBtn" aria-label="切换音效" aria-pressed="false" title="点击解锁沉浸声场">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9v6h4l5 4V5L9 9H5zm11.5 3a4.5 4.5 0 0 0-1.5-3.35v6.7A4.5 4.5 0 0 0 16.5 12zm0-8.4v2.07a8 8 0 0 1 0 12.66v2.07a10 10 0 0 0 0-16.8z"/></svg>
+        </button>
+        <button class="ghost-btn" id="helpBtn"><span>?</span> 操作说明</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="control-panel left-panel">
+        <div class="panel-heading">
+          <span>01</span>
+          <div><small>DETONATION CONTROL</small><h2>爆炸参数</h2></div>
+        </div>
+
+        <section class="control-section">
+          <div class="label-row"><label for="yieldRange">模拟当量</label><output id="yieldOutput">100 <small>kt</small></output></div>
+          <input id="yieldRange" class="range danger" type="range" min="0" max="100" value="16.667" step="0.1">
+          <div class="range-scale"><span>10 kt</span><span>10 Mt</span><span>10 Gt</span></div>
+          <div class="preset-row" aria-label="当量预设">
+            <button class="active" data-yield="100">100K</button>
+            <button data-yield="10000">10M</button>
+            <button data-yield="1000000">1G</button>
+            <button data-yield="10000000">10G</button>
+          </div>
+        </section>
+
+        <section class="control-section">
+          <div class="label-row"><label for="heightRange">爆心高度</label><output id="heightOutput">650 <small>m</small></output></div>
+          <input id="heightRange" class="range" type="range" min="0" max="3000" value="650" step="50">
+          <div class="range-scale"><span>地表</span><span>空爆</span><span>高空</span></div>
+          <p class="micro-copy" id="burstDescription">空中引爆 · 冲击波覆盖更广，尘柱较轻</p>
+        </section>
+
+        <section class="control-section compact">
+          <div class="section-title">观测环境</div>
+          <div class="scene-selector" role="group" aria-label="观测环境">
+            <button class="active" data-scene="city"><span class="scene-icon city-icon"></span><b>都市</b></button>
+            <button data-scene="desert"><span class="scene-icon desert-icon"></span><b>荒漠</b></button>
+            <button data-scene="coast"><span class="scene-icon coast-icon"></span><b>海岸</b></button>
+          </div>
+        </section>
+
+        <section class="control-section sequence-control">
+          <div class="section-title"><span>爆破序列</span><b id="sequenceState">SINGLE</b></div>
+          <button class="sequence-toggle" id="continuousToggle" aria-pressed="false">
+            <i><b></b></i><span><strong>连续爆破</strong><small>多爆点自动循环</small></span>
+          </button>
+          <div class="interval-control" id="intervalControl">
+            <div class="label-row"><label for="intervalRange">爆破间隔</label><output id="intervalOutput">2.5 <small>s</small></output></div>
+            <input id="intervalRange" class="range" type="range" min="1.2" max="5" value="2.5" step="0.1">
+          </div>
+        </section>
+
+        <section class="mission-card sandbox-card">
+          <div class="mission-top"><span>自由沙盘</span><b>NO LIMIT</b></div>
+          <h3>选择任意爆点</h3>
+          <p>单击三维地面移动投放标记，按 Space 或红色按钮立即引爆，可无限叠加。</p>
+          <div class="target-readout"><span>当前落点</span><strong id="targetRadius">X 0 · Z 0</strong></div>
+          <div class="prediction"><span>已投放</span><b id="predictedRadius">0 枚</b><i id="predictionState">沙盘就绪</i></div>
+        </section>
+
+        <button id="detonateBtn" class="detonate-btn">
+          <span class="button-light"></span>
+          <span class="button-copy"><small id="detonateHint">INSTANT DEPLOYMENT</small><b id="detonateText">立即投放核爆</b></span>
+          <span class="hold-ring"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="19"></circle><circle id="holdProgress" cx="22" cy="22" r="19"></circle></svg><i>↯</i></span>
+        </button>
+        <div class="safety-note"><i></i><span>纯视觉与声学模拟 · 不包含现实操作数据</span></div>
+      </aside>
+
+      <section class="simulation-stage" id="simulationStage">
+        <canvas id="simCanvas" aria-label="核爆视觉模拟场景"></canvas>
+        <canvas id="grainCanvas" aria-hidden="true"></canvas>
+        <div class="scanlines"></div>
+        <div class="stage-vignette"></div>
+        <div class="white-flash" id="whiteFlash"></div>
+
+        <div class="camera-hud">
+          <div class="hud-top-left">
+            <span>CAM 04 / <b id="sceneLabel">都市观测站</b></span>
+            <small>35.6804° N &nbsp; // &nbsp; FICTIONAL SITE</small>
+          </div>
+          <div class="rec-state"><i></i><span>REC</span><b id="timecode">00:00:00</b></div>
+          <div class="reticle" id="reticle"><i></i><i></i><i></i><i></i><span></span></div>
+          <div class="ground-label" id="groundLabel"><i></i><span>GROUND ZERO</span><b>0.0 KM</b></div>
+          <div class="camera-data"><span>ISO 400</span><span>1/1000</span><span>F 5.6</span><span id="windLabel">WIND 12 KM/H →</span></div>
+          <div class="freecam-hint"><b>FREE CAM</b><span>单击选爆点 · 拖动环绕 · WASD 移动 · 滚轮缩放 · Q/E 升降</span></div>
+        </div>
+
+        <div class="event-banner" id="eventBanner">
+          <i></i>
+          <div><small id="eventKicker">PHASE 01</small><strong id="eventTitle">初始闪光</strong></div>
+          <span id="eventTime">T+0.00s</span>
+        </div>
+
+        <div class="stage-footer">
+          <button id="pauseBtn" class="playback-btn" disabled aria-label="暂停或继续"><span>Ⅱ</span></button>
+          <div class="timeline">
+          <div class="timeline-labels"><span id="timelineTime">T−00:03.00</span><b id="phaseLabel">等待点火</b><span id="blastCounter">爆点 00</span></div>
+            <div class="timeline-track"><i id="timelineProgress"></i><em data-at="15"></em><em data-at="34"></em><em data-at="58"></em><em data-at="82"></em></div>
+          </div>
+          <button id="replayBtn" class="text-btn"><span>×</span> 清空</button>
+          <button id="speedBtn" class="speed-btn">1×</button>
+        </div>
+      </section>
+
+      <aside class="control-panel right-panel">
+        <div class="panel-heading">
+          <span>02</span>
+          <div><small>LIVE TELEMETRY</small><h2>实时观测</h2></div>
+          <i class="live-pulse"></i>
+        </div>
+
+        <section class="telemetry-primary">
+          <div class="phase-orbit"><i></i><span id="phaseNumber">00</span></div>
+          <div><small>当前阶段</small><strong id="phaseName">系统待命</strong><span id="phaseSub">AWAITING AUTHORIZATION</span></div>
+        </section>
+
+        <section class="metric-grid">
+          <div class="metric"><span>火球直径</span><strong id="fireballMetric">0</strong><small>m</small><i><b id="fireballBar"></b></i></div>
+          <div class="metric"><span>冲击前沿</span><strong id="shockMetric">0.0</strong><small>km</small><i><b id="shockBar"></b></i></div>
+          <div class="metric"><span>云顶高度</span><strong id="cloudMetric">0.0</strong><small>km</small><i><b id="cloudBar"></b></i></div>
+          <div class="metric"><span>地面震动</span><strong id="seismicMetric">0.0</strong><small>级</small><i><b id="seismicBar"></b></i></div>
+        </section>
+
+        <section class="wave-section">
+          <div class="section-title"><span>信号波形</span><b id="signalState">STANDBY</b></div>
+          <canvas id="waveCanvas" width="300" height="94"></canvas>
+          <div class="wave-scale"><span>声学</span><span>光学</span><span>震动</span></div>
+        </section>
+
+        <section class="event-log">
+          <div class="section-title"><span>事件记录</span><button id="clearLogBtn">清除</button></div>
+          <div id="logList" class="log-list">
+            <div><time>00:00:00</time><i class="ok"></i><span>观测系统已上线</span></div>
+            <div><time>00:00:01</time><i></i><span>等待模拟参数</span></div>
+          </div>
+        </section>
+
+        <section class="integrity">
+          <div><span>观测站完整度</span><strong id="integrityValue">100%</strong></div>
+          <i><b id="integrityBar"></b></i>
+          <small id="integrityNote">所有传感器正常</small>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <dialog id="resultDialog" class="result-dialog">
+    <div class="result-glow"></div>
+    <button class="dialog-close" id="closeResult" aria-label="关闭">×</button>
+    <span class="result-kicker">SIMULATION COMPLETE</span>
+    <div class="grade-ring"><i></i><strong id="resultGrade">S</strong><span>观测评级</span></div>
+    <h2 id="resultTitle">完美校准</h2>
+    <p id="resultCopy">冲击波前沿精确穿过目标观测区，全部遥测数据已记录。</p>
+    <div class="result-stats">
+      <div><span>半径误差</span><strong id="resultError">0.0 km</strong></div>
+      <div><span>数据完整度</span><strong id="resultData">98%</strong></div>
+      <div><span>观测得分</span><strong id="resultScore">9,840</strong></div>
+    </div>
+    <div class="dialog-actions"><button id="newMissionBtn">新任务</button><button id="dialogReplayBtn">重播爆炸</button></div>
+  </dialog>
+
+  <dialog id="helpDialog" class="help-dialog">
+    <button class="dialog-close" id="closeHelp" aria-label="关闭">×</button>
+    <span class="result-kicker">OPERATOR MANUAL</span>
+    <h2>观测员手册</h2>
+    <div class="help-grid">
+      <div><b>01</b><span><strong>选择爆点</strong>单击三维地面移动红色投放标记。</span></div>
+      <div><b>02</b><span><strong>立即投放</strong>按 Space 或点红色按钮，想放几枚就放几枚。</span></div>
+      <div><b>03</b><span><strong>连续爆破</strong>开启后按设定间隔生成新爆点，再点红色按钮停止。</span></div>
+      <div><b>04</b><span><strong>自由观察</strong>WASD 移动，Q/E 升降，拖动可越过地平线仰视，滚轮缩放。</span></div>
+      <div><b>05</b><span><strong>重置沙盘</strong>按 C 或点击底部“清空”，随时恢复三维城市。</span></div>
+      <div><b>06</b><span><strong>空间声场</strong>首次爆破会自动解锁声音；也可点击顶部扬声器试听确认。建议使用耳机，主声浪按观察距离延迟抵达。</span></div>
+    </div>
+    <p>建议佩戴耳机并全屏体验。没有任务流程或投放次数限制；所有数值均为游戏化视觉参数。</p>
+  </dialog>
+
+  <script src="node_modules/three/build/three.min.js"></script>
+  <script src="node_modules/cannon/build/cannon.min.js"></script>
+  <script src="game.js?v=3"></script>
+</body>
+</html>
