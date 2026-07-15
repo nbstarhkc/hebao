@@ -1728,11 +1728,11 @@
   }
 
   function updateRangeFill(input,color){const percent=((+input.value-+input.min)/(+input.max-+input.min))*100;input.style.background=`linear-gradient(90deg,${color} 0 ${percent}%,rgba(126,149,143,.2) ${percent}%)`;}
-  function yieldFromSlider(value){return Math.round(10*Math.pow(1000000,value/100));}
-  function sliderFromYield(value){return Math.log10(value/10)/6*100;}
+  function yieldFromSlider(value){return Math.round(10*Math.pow(100000000,value/100));}
+  function sliderFromYield(value){return Math.log10(value/10)/8*100;}
   function updateControls(){
     state.yieldKt=yieldFromSlider(+ui.yieldRange.value);state.burstHeight=+ui.heightRange.value;state.interval=+ui.intervalRange.value;
-    ui.yieldOutput.innerHTML=state.yieldKt>=1000000?`${(state.yieldKt/1000000).toFixed(1)} <small>Gt</small>`:state.yieldKt>=1000?`${(state.yieldKt/1000).toFixed(1)} <small>Mt</small>`:`${state.yieldKt} <small>kt</small>`;
+    ui.yieldOutput.innerHTML=state.yieldKt>=1000000000?`${(state.yieldKt/1000000000).toFixed(1)} <small>Tt</small>`:state.yieldKt>=1000000?`${(state.yieldKt/1000000).toFixed(1)} <small>Gt</small>`:state.yieldKt>=1000?`${(state.yieldKt/1000).toFixed(1)} <small>Mt</small>`:`${state.yieldKt} <small>kt</small>`;
     ui.heightOutput.innerHTML=`${state.burstHeight.toLocaleString("zh-CN")} <small>m</small>`;ui.intervalOutput.innerHTML=`${state.interval.toFixed(1)} <small>s</small>`;
     updateRangeFill(ui.yieldRange,"var(--red)");updateRangeFill(ui.heightRange,"var(--cyan)");updateRangeFill(ui.intervalRange,"var(--cyan)");
     ui.burstDescription.textContent=state.burstHeight<150?"地表引爆 · 尘柱更重，地面震动更强":state.burstHeight<1700?"空中引爆 · 冲击波覆盖更广，火球悬空":"高空引爆 · 云柱更高，地面效应减弱";

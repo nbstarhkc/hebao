@@ -55,13 +55,13 @@
 
         <section class="control-section">
           <div class="label-row"><label for="yieldRange">模拟当量</label><output id="yieldOutput">100 <small>kt</small></output></div>
-          <input id="yieldRange" class="range danger" type="range" min="0" max="100" value="16.667" step="0.1">
-          <div class="range-scale"><span>10 kt</span><span>10 Mt</span><span>10 Gt</span></div>
+          <input id="yieldRange" class="range danger" type="range" min="0" max="100" value="12.5" step="0.1">
+          <div class="range-scale"><span>10 kt</span><span>100 Mt</span><span>1 Tt</span></div>
           <div class="preset-row" aria-label="当量预设">
             <button class="active" data-yield="100">100K</button>
             <button data-yield="10000">10M</button>
             <button data-yield="1000000">1G</button>
-            <button data-yield="10000000">10G</button>
+            <button data-yield="1000000000">1T</button>
           </div>
         </section>
 
@@ -234,6 +234,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/cannon@0.6.2/build/cannon.min.js" crossorigin="anonymous"></script>
-  <script src="game.js?v=6"></script>
+  <script src="game.js?v=7"></script>
 </body>
 </html>
